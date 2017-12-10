@@ -1,18 +1,18 @@
-//Author: Roman Ziserman
 
 import java.util.*;
 
-/**The memory map is multimap. They key represents the block of memory. The value is a list
- *with two elements. The first element is the block size. The second element
- *holds a process ID. This is the process which is using the block.
+/**The MemoryMap class is multimap of a memory module. They key represents the block of memory. The value is a list
+ *with two elements. The first element is the block size. The second element holds a process ID. This is the process
+ * which is using the block.
+ * @Author Roman Ziserman
  */
 public class MemoryMap extends HashMap {
     private ArrayList<Integer> size_and_id;
     private int num_of_blocks;
-    private int block_size;
+    private int default_block_size;
     private final int block_size_index = 0;
     private final int id_index = 1;
-    private int total_mem = num_of_blocks * block_size;
+    private int total_mem = num_of_blocks * default_block_size;
     private int used_mem;
     private int avail_mem = total_mem - used_mem;
 
@@ -27,7 +27,7 @@ public class MemoryMap extends HashMap {
      */
     MemoryMap(int num_of_blocks, int block_size){
         this.num_of_blocks = num_of_blocks;
-        this.block_size = block_size;
+        this.default_block_size = block_size;
         for(int block_num = 1; block_num <= num_of_blocks; block_num++) {
             this.put(block_num, new ArrayList<Integer>().add(block_size));
         }
@@ -48,6 +48,7 @@ public class MemoryMap extends HashMap {
         updateAvailMem(block_size);
         ArrayList<Integer> temp = new ArrayList<Integer>();
         this.put(num_of_blocks + 1, temp.add(block_size));
+        num_of_blocks++;
     } //close assignNewBlock()
 
     /**
@@ -76,7 +77,7 @@ public class MemoryMap extends HashMap {
      * This method checks if the specified block is free. It does so by checking if a process
      * is assigned to the block.
      * @param block
-     * @return
+     * @return boolean
      */
     public boolean checkIfFree(int block){
         ArrayList<Integer> temp = (ArrayList<Integer>)this.get(block);
@@ -99,22 +100,47 @@ public class MemoryMap extends HashMap {
         this.put(block, size_and_id);
     } // close setSizeAndID()
 
+
+    /**
+     * Get block size of a default block.
+     * @return int
+     */
     public int getBlockSize(){
-        return block_size;
-    }
+        return default_block_size;
+    } //close getBlockSize()
 
-    public int getNumOfBlocks(){
-        return num_of_blocks;
-    }
-
+    /**
+     * Overloaded. Get block size of specified block
+     * @param block
+     * @return int
+     */
     public int getBlockSize(int block){
         ArrayList<Integer> temp = (ArrayList<Integer>)this.get(block);
         return temp.get(block_size_index);
+    } //close getBlockSize(int)
 
-    }
+    public int getNumOfBlocks() {
+        return num_of_blocks;
+    } //close getNumOfBlocks()
 
     public int getProcessId(int block){
         ArrayList<Integer> temp = (ArrayList<Integer>)this.get(block);
         return temp.get(id_index);
-    }
+    } //close getProcessId()
+
+    public void releaseBlock(int block){
+        ArrayList<Integer> temp = (ArrayList<Integer>)this.get(block);
+        temp.set(id_index, null);
+        this.replace(block, temp);
+    } //close releaseBlock()
+
+    public void merge(int block_one, int block_two){
+        ArrayList<Integer> temp_one = (ArrayList<Integer>)this.get(block_one);
+        ArrayList<Integer> temp_two = (ArrayList<Integer>)this.get(block_two);
+        int combo_block_size = temp_one.get(block_size_index) + temp_two.get(block_size_index);
+        temp_one.set(block_size_index,combo_block_size);
+        this.replace(block_one, temp_one);
+        this.remove(block_two);
+        num_of_blocks--;
+    }//close merge()
 }
